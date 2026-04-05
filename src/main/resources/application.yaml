@@ -19,3 +19,7 @@ jwt:
 
 firebase:
   service-account-key-path: "${FIREBASE_SERVICE_ACCOUNT_KEY_PATH}"
+
+
+server:
+  port: ${SERVER_PORT}
