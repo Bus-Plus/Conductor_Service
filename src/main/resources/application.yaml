@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: conductor_service
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+      dialect: org.hibernate.dialect.MySQL8Dialect
+    show-sql: ${SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: ${FORMAT_SQL:true}
+jwt:
+  secret: "${JWT_SECRET}"
+
+firebase:
+  service-account-key-path: "${FIREBASE_SERVICE_ACCOUNT_KEY_PATH}"
