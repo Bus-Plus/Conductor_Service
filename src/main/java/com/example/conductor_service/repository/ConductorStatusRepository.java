@@ -63,4 +63,15 @@ public class ConductorStatusRepository {
 
         busDoc.set(resetState, SetOptions.merge()).get();
     }
+
+    public void deleteBus(String routeId, String busNumber)
+            throws InterruptedException, ExecutionException {
+        DocumentReference busDoc = firestore
+                .collection("bus_status")
+                .document(routeId)
+                .collection("busses")
+                .document(busNumber);
+
+        busDoc.delete().get();
+    }
 }

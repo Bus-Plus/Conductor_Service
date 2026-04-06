@@ -1,17 +1,25 @@
 package com.example.conductor_service.controller;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.conductor_service.dto.input.BusRequest;
+import com.example.conductor_service.dto.output.AdvanceCurrentStopResponse;
+import com.example.conductor_service.dto.output.BusDetailsResponse;
+import com.example.conductor_service.dto.output.ConnectionResponse;
+import com.example.conductor_service.dto.output.DeleteBusResponse;
+import com.example.conductor_service.dto.output.FirebaseStatusResponse;
+import com.example.conductor_service.dto.output.ResetTripResponse;
+import com.example.conductor_service.dto.output.StatusResponse;
 import com.example.conductor_service.service.ConductorStatusService;
 import com.example.conductor_service.service.ConductorStatusService.BusNotFoundException;
 import com.google.cloud.firestore.Firestore;
@@ -29,127 +37,95 @@ public class ConductorStatusController {
     }
 
     @GetMapping("/status")
-    public ResponseEntity<Map<String, Object>> getStatus() {
+    public ResponseEntity<StatusResponse> getStatus() {
         boolean authenticated = SecurityContextHolder.getContext().getAuthentication() != null;
-        return ResponseEntity.ok(Map.of(
-                "status", "OK",
-                "service", "conductor_service",
-                "authenticated", authenticated
-        ));
+        StatusResponse response = new StatusResponse("OK", "conductor_service", authenticated);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/connection")
-    public ResponseEntity<Map<String, Object>> getConnection() {
-        return ResponseEntity.ok(Map.of(
-                "connection", "active",
-                "checkedAt", Instant.now().toString()
-        ));
+    public ResponseEntity<ConnectionResponse> getConnection() {
+        ConnectionResponse response = new ConnectionResponse("active", Instant.now().toString());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/firebase/status")
-    public ResponseEntity<Map<String, Object>> getFirebaseStatus() {
+    public ResponseEntity<FirebaseStatusResponse> getFirebaseStatus() {
         try {
             firestore.collection("health_check").limit(1).get().get();
-            return ResponseEntity.ok(Map.of(
-                    "firebase", "connected",
-                    "service", "conductor_service",
-                    "checkedAt", Instant.now().toString()
-            ));
+            FirebaseStatusResponse response = new FirebaseStatusResponse("connected", "conductor_service", Instant.now().toString());
+            return ResponseEntity.ok(response);
         } catch (InterruptedException | ExecutionException ex) {
             Thread.currentThread().interrupt();
-            return ResponseEntity.status(503).body(Map.of(
-                    "firebase", "unavailable",
-                    "error", ex.getMessage(),
-                    "service", "conductor_service"
-            ));
+            return ResponseEntity.status(503).body(null);
         }
     }
 
     @PutMapping("/bus/{routeId}/{busNumber}/current-stop/advance")
-    public ResponseEntity<Map<String, Object>> advanceCurrentStop(
+    public ResponseEntity<AdvanceCurrentStopResponse> advanceCurrentStop(
             @PathVariable String routeId,
             @PathVariable String busNumber) {
 
         try {
-            int nextStop = conductorStatusService.advanceCurrentStop(routeId, busNumber);
-
-            return ResponseEntity.ok(Map.of(
-                    "routeId", routeId,
-                    "busNumber", busNumber,
-                    "currentStop", nextStop,
-                    "updatedAt", Instant.now().toString()
-            ));
+            BusRequest request = new BusRequest(routeId, busNumber);
+            AdvanceCurrentStopResponse response = conductorStatusService.advanceCurrentStop(request);
+            return ResponseEntity.ok(response);
         } catch (BusNotFoundException ex) {
-            return ResponseEntity.status(404).body(Map.of(
-                    "error", ex.getMessage(),
-                    "routeId", routeId,
-                    "busNumber", busNumber
-            ));
+            return ResponseEntity.status(404).body(null);
         } catch (InterruptedException | ExecutionException ex) {
             Thread.currentThread().interrupt();
-            return ResponseEntity.status(503).body(Map.of(
-                    "error", "Failed to update currentStop",
-                    "message", ex.getMessage(),
-                    "routeId", routeId,
-                    "busNumber", busNumber
-            ));
+            return ResponseEntity.status(503).body(null);
         }
     }
 
     @PutMapping("/bus/{routeId}/{busNumber}/reset")
-    public ResponseEntity<Map<String, Object>> resetTrip(
+    public ResponseEntity<ResetTripResponse> resetTrip(
             @PathVariable String routeId,
             @PathVariable String busNumber) {
 
         try {
-            int stopCount = conductorStatusService.resetTrip(routeId, busNumber);
-
-            return ResponseEntity.ok(Map.of(
-                    "routeId", routeId,
-                    "busNumber", busNumber,
-                    "currentStop", 0,
-                    "stopsCount", stopCount,
-                    "updatedAt", Instant.now().toString()
-            ));
+            BusRequest request = new BusRequest(routeId, busNumber);
+            ResetTripResponse response = conductorStatusService.resetTrip(request);
+            return ResponseEntity.ok(response);
         } catch (BusNotFoundException ex) {
-            return ResponseEntity.status(404).body(Map.of(
-                    "error", ex.getMessage(),
-                    "routeId", routeId,
-                    "busNumber", busNumber
-            ));
+            return ResponseEntity.status(404).body(null);
         } catch (InterruptedException | ExecutionException ex) {
             Thread.currentThread().interrupt();
-            return ResponseEntity.status(503).body(Map.of(
-                    "error", "Failed to reset trip",
-                    "message", ex.getMessage(),
-                    "routeId", routeId,
-                    "busNumber", busNumber
-            ));
+            return ResponseEntity.status(503).body(null);
         }
     }
 
     @GetMapping("/bus/{routeId}/{busNumber}")
-    public ResponseEntity<Map<String, Object>> getBusDetails(
+    public ResponseEntity<BusDetailsResponse> getBusDetails(
             @PathVariable String routeId,
             @PathVariable String busNumber) {
 
         try {
-            Map<String, Object> details = conductorStatusService.getBusDetails(routeId, busNumber);
-            return ResponseEntity.ok(details);
+            BusRequest request = new BusRequest(routeId, busNumber);
+            BusDetailsResponse response = conductorStatusService.getBusDetails(request);
+            return ResponseEntity.ok(response);
         } catch (BusNotFoundException ex) {
-            return ResponseEntity.status(404).body(Map.of(
-                    "error", ex.getMessage(),
-                    "routeId", routeId,
-                    "busNumber", busNumber
-            ));
+            return ResponseEntity.status(404).body(null);
         } catch (InterruptedException | ExecutionException ex) {
             Thread.currentThread().interrupt();
-            return ResponseEntity.status(503).body(Map.of(
-                    "error", "Failed to fetch bus details",
-                    "message", ex.getMessage(),
-                    "routeId", routeId,
-                    "busNumber", busNumber
-            ));
+            return ResponseEntity.status(503).body(null);
+        }
+    }
+    @DeleteMapping("/bus/{routeId}/{busNumber}")
+    public ResponseEntity<DeleteBusResponse> deleteBus(
+            @PathVariable String routeId,
+            @PathVariable String busNumber) {
+
+        try {
+            BusRequest request = new BusRequest(routeId, busNumber);
+            DeleteBusResponse response = conductorStatusService.deleteBus(request);
+            return ResponseEntity.ok(response);
+        } catch (BusNotFoundException ex) {
+            return ResponseEntity.status(404).body(null);
+        } catch (InterruptedException | ExecutionException ex) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(503).body(null);
         }
     }
 }
+
