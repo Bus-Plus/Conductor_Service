@@ -1,6 +1,8 @@
 package com.example.conductor_service.repository;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -73,5 +75,14 @@ public class ConductorStatusRepository {
                 .document(busNumber);
 
         busDoc.delete().get();
+    }
+
+    public List<String> listDocumentNames(String collectionId)
+            throws InterruptedException, ExecutionException {
+        List<String> documentNames = new ArrayList<>();
+        for (DocumentReference documentReference : firestore.collection(collectionId).listDocuments()) {
+            documentNames.add(documentReference.getId());
+        }
+        return documentNames;
     }
 }

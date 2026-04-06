@@ -17,6 +17,7 @@ import com.example.conductor_service.dto.output.AdvanceCurrentStopResponse;
 import com.example.conductor_service.dto.output.BusDetailsResponse;
 import com.example.conductor_service.dto.output.ConnectionResponse;
 import com.example.conductor_service.dto.output.DeleteBusResponse;
+import com.example.conductor_service.dto.output.DocumentNamesResponse;
 import com.example.conductor_service.dto.output.FirebaseStatusResponse;
 import com.example.conductor_service.dto.output.ResetTripResponse;
 import com.example.conductor_service.dto.output.StatusResponse;
@@ -111,6 +112,18 @@ public class ConductorStatusController {
             return ResponseEntity.status(503).body(null);
         }
     }
+
+    @GetMapping("/payment-methods")
+    public ResponseEntity<DocumentNamesResponse> getPaymentMethodDocumentNames() {
+        try {
+            DocumentNamesResponse response = conductorStatusService.listDocumentNames("payment_methods");
+            return ResponseEntity.ok(response);
+        } catch (InterruptedException | ExecutionException ex) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(503).body(null);
+        }
+    }
+
     @DeleteMapping("/bus/{routeId}/{busNumber}")
     public ResponseEntity<DeleteBusResponse> deleteBus(
             @PathVariable String routeId,

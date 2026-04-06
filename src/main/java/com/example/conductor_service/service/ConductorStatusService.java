@@ -11,6 +11,7 @@ import com.example.conductor_service.dto.input.BusRequest;
 import com.example.conductor_service.dto.output.AdvanceCurrentStopResponse;
 import com.example.conductor_service.dto.output.BusDetailsResponse;
 import com.example.conductor_service.dto.output.DeleteBusResponse;
+import com.example.conductor_service.dto.output.DocumentNamesResponse;
 import com.example.conductor_service.dto.output.ResetTripResponse;
 import com.example.conductor_service.repository.ConductorStatusRepository;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -72,6 +73,11 @@ public class ConductorStatusService {
 
         conductorStatusRepository.deleteBus(request.getRouteId(), request.getBusNumber());
         return new DeleteBusResponse(request.getRouteId(), request.getBusNumber(), true, java.time.Instant.now().toString());
+    }
+
+    public DocumentNamesResponse listDocumentNames(String collectionId)
+            throws InterruptedException, ExecutionException {
+        return new DocumentNamesResponse(collectionId, conductorStatusRepository.listDocumentNames(collectionId));
     }
 
     private int getStopCount(Object stopsValue) {
