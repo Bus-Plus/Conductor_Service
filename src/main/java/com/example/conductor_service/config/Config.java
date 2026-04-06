@@ -29,7 +29,8 @@ public class Config {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/conductor/status", "/conductor/connection", "/conductor/firebase/status").hasRole("CONDUCTOR")
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/conductor/**").hasRole("CONDUCTOR")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
