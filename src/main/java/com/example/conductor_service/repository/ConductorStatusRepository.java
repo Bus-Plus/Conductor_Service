@@ -33,6 +33,60 @@ public class ConductorStatusRepository {
         return busDoc.get().get();
     }
 
+    public DocumentSnapshot findRoute(String routeId)
+            throws InterruptedException, ExecutionException {
+        return firestore
+                .collection("bus_stops")
+                .document(routeId)
+                .get()
+                .get();
+    }
+
+    public java.util.List<String> findRouteStops(String routeId)
+            throws InterruptedException, ExecutionException {
+        DocumentSnapshot routeDoc = findRoute(routeId);
+        if (!routeDoc.exists()) {
+            return java.util.Collections.emptyList();
+        }
+
+        Object stopsValue = routeDoc.get("routeStops");
+        if (stopsValue == null) {
+            stopsValue = routeDoc.get("stops");
+        }
+
+        if (stopsValue instanceof java.util.List) {
+            java.util.List<?> list = (java.util.List<?>) stopsValue;
+            java.util.List<String> stops = new java.util.ArrayList<>();
+            for (Object item : list) {
+                if (item != null) {
+                    stops.add(item.toString());
+                }
+            }
+            return stops;
+        }
+
+        if (stopsValue instanceof String) {
+            String value = ((String) stopsValue).trim();
+            if (value.startsWith("[") && value.endsWith("]")) {
+                value = value.substring(1, value.length() - 1);
+            }
+            if (value.isBlank()) {
+                return java.util.Collections.emptyList();
+            }
+            String[] parts = value.split(",");
+            java.util.List<String> stops = new java.util.ArrayList<>();
+            for (String part : parts) {
+                String trimmed = part.trim();
+                if (!trimmed.isBlank()) {
+                    stops.add(trimmed);
+                }
+            }
+            return stops;
+        }
+
+        return java.util.Collections.emptyList();
+    }
+
     public void updateCurrentStop(String routeId, String busNumber, int currentStop)
             throws InterruptedException, ExecutionException {
         DocumentReference busDoc = firestore
@@ -75,6 +129,17 @@ public class ConductorStatusRepository {
                 .document(busNumber);
 
         busDoc.delete().get();
+    }
+
+    public void updateStops(String routeId, String busNumber, Object stops)
+            throws InterruptedException, ExecutionException {
+        DocumentReference busDoc = firestore
+                .collection("bus_status")
+                .document(routeId)
+                .collection("busses")
+                .document(busNumber);
+
+        busDoc.update("stops", stops).get();
     }
 
     public List<String> listDocumentNames(String collectionId)

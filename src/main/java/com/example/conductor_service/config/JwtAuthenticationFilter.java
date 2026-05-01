@@ -1,6 +1,7 @@
 package com.example.conductor_service.config;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,7 +33,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             String token = bearerToken.substring(7);
 
-            if (tokenProvider.validateToken(token)) {
+            try {
+                tokenProvider.validateToken(token);
                 String username = tokenProvider.getUsername(token);
                 String role = tokenProvider.getRole(token);
 
@@ -63,6 +65,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                     }
                 }
+            } catch (JwtTokenValidationException ex) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                response.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
+                return;
             }
         }
 

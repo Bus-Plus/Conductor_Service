@@ -26,17 +26,20 @@ public class JwtTokenProvider {
         System.out.println("🔐 SECRET LENGTH: " + secret.length());
     }
 
-    public boolean validateToken(String token) {
+    public void validateToken(String token) {
         try {
             Jws<Claims> claims = Jwts.parserBuilder()
                     .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token);
-            return !claims.getBody().getExpiration().before(new java.util.Date());
+
+            if (claims.getBody().getExpiration().before(new java.util.Date())) {
+                throw new JwtTokenValidationException("Token expired", true);
+            }
         } catch (ExpiredJwtException ex) {
-            return false;
+            throw new JwtTokenValidationException("Token expired", true);
         } catch (JwtException ex) {
-            return false;
+            throw new JwtTokenValidationException("Invalid token", false);
         }
     }
 
