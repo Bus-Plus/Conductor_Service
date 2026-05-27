@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,6 +29,7 @@ import com.example.conductor_service.dto.output.PassTypeListResponse;
 import com.example.conductor_service.dto.output.ResetTripResponse;
 import com.example.conductor_service.dto.output.RouteDetailsResponse;
 import com.example.conductor_service.dto.output.StatusResponse;
+import com.example.conductor_service.service.AuthService;
 import com.example.conductor_service.service.ConductorStatusService;
 import com.example.conductor_service.service.ConductorStatusService.BusNotFoundException;
 import com.example.conductor_service.service.ConductorStatusService.RouteNotFoundException;
@@ -39,10 +41,12 @@ public class ConductorStatusController {
 
     private final ConductorStatusService conductorStatusService;
     private final Firestore firestore;
+    private final AuthService authService;
 
-    public ConductorStatusController(ConductorStatusService conductorStatusService, Firestore firestore) {
+    public ConductorStatusController(ConductorStatusService conductorStatusService, Firestore firestore, AuthService authService) {
         this.conductorStatusService = conductorStatusService;
         this.firestore = firestore;
+        this.authService = authService;
     }
 
     @GetMapping("/status")
@@ -50,6 +54,26 @@ public class ConductorStatusController {
         boolean authenticated = SecurityContextHolder.getContext().getAuthentication() != null;
         StatusResponse response = new StatusResponse("OK", "conductor_service", authenticated);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<Map<String, Object>> validateRole(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+        try {
+            if (authService.validateConductorRole(token)) {
+                return ResponseEntity.ok(Map.of("role", "CONDUCTOR"));
+            }
+            return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+        } catch (Exception ex) {
+            return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+        }
+    }
+
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Authorization header must be provided as Bearer token");
+        }
+        return authorizationHeader.substring(7);
     }
 
     @GetMapping("/connection")
