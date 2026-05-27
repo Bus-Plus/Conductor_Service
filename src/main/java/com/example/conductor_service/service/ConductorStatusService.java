@@ -95,6 +95,20 @@ public class ConductorStatusService {
         return new ResetTripResponse(request.getRouteId(), request.getBusNumber(), 0, stopCount, java.time.Instant.now().toString());
     }
 
+    public ResetTripResponse initializeBusStatus(String routeId, String busNumber)
+            throws InterruptedException, ExecutionException {
+        DocumentSnapshot routeSnapshot = conductorStatusRepository.findRoute(routeId);
+        if (!routeSnapshot.exists()) {
+            throw new RouteNotFoundException(routeId);
+        }
+
+        java.util.List<String> routeStops = conductorStatusRepository.findRouteStops(routeId);
+        int stopCount = routeStops == null ? 0 : routeStops.size();
+
+        conductorStatusRepository.resetTrip(routeId, busNumber, stopCount, false);
+        return new ResetTripResponse(routeId, busNumber, 0, stopCount, java.time.Instant.now().toString());
+    }
+
     public DeleteBusResponse deleteBus(BusRequest request)
             throws InterruptedException, ExecutionException {
         DocumentSnapshot snapshot = conductorStatusRepository.findBus(request.getRouteId(), request.getBusNumber());

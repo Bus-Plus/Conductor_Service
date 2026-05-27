@@ -128,6 +128,22 @@ public class ConductorStatusController {
         }
     }
 
+    @PutMapping("/bus/{routeId}/{busNumber}/initialize")
+    public ResponseEntity<ResetTripResponse> initializeBusStatus(
+            @PathVariable String routeId,
+            @PathVariable String busNumber) {
+
+        try {
+            ResetTripResponse response = conductorStatusService.initializeBusStatus(routeId, busNumber);
+            return ResponseEntity.ok(response);
+        } catch (RouteNotFoundException ex) {
+            return ResponseEntity.status(404).body(null);
+        } catch (InterruptedException | ExecutionException ex) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(503).body(null);
+        }
+    }
+
     @GetMapping("/bus/{routeId}/{busNumber}")
     public ResponseEntity<BusDetailsResponse> getBusDetails(
             @PathVariable String routeId,
