@@ -54,8 +54,7 @@ public class ConductorStatusRepository {
             stopsValue = routeDoc.get("stops");
         }
 
-        if (stopsValue instanceof java.util.List) {
-            java.util.List<?> list = (java.util.List<?>) stopsValue;
+        if (stopsValue instanceof java.util.List<?> list) {
             java.util.List<String> stops = new java.util.ArrayList<>();
             for (Object item : list) {
                 if (item != null) {
@@ -65,15 +64,15 @@ public class ConductorStatusRepository {
             return stops;
         }
 
-        if (stopsValue instanceof String) {
-            String value = ((String) stopsValue).trim();
-            if (value.startsWith("[") && value.endsWith("]")) {
-                value = value.substring(1, value.length() - 1);
+        if (stopsValue instanceof String value) {
+            String text = value.trim();
+            if (text.startsWith("[") && text.endsWith("]")) {
+                text = text.substring(1, text.length() - 1);
             }
-            if (value.isBlank()) {
+            if (text.isBlank()) {
                 return java.util.Collections.emptyList();
             }
-            String[] parts = value.split(",");
+            String[] parts = text.split(",");
             java.util.List<String> stops = new java.util.ArrayList<>();
             for (String part : parts) {
                 String trimmed = part.trim();

@@ -82,17 +82,12 @@ public class ConductorStatusService {
 
     public ResetTripResponse resetTrip(BusRequest request)
             throws InterruptedException, ExecutionException {
-        DocumentSnapshot snapshot = conductorStatusRepository.findBus(request.getRouteId(), request.getBusNumber());
-        if (!snapshot.exists()) {
-            throw new BusNotFoundException(request.getRouteId(), request.getBusNumber());
+        try {
+            deleteBus(request);
+        } catch (BusNotFoundException ignored) {
+            // ignore missing bus on reset
         }
-
-        Object stopsValue = snapshot.get("stops");
-        int stopCount = getStopCount(stopsValue);
-        boolean stringValues = isStringStops(stopsValue);
-
-        conductorStatusRepository.resetTrip(request.getRouteId(), request.getBusNumber(), stopCount, stringValues);
-        return new ResetTripResponse(request.getRouteId(), request.getBusNumber(), 0, stopCount, java.time.Instant.now().toString());
+        return initializeBusStatus(request.getRouteId(), request.getBusNumber());
     }
 
     public ResetTripResponse initializeBusStatus(String routeId, String busNumber)
@@ -280,50 +275,26 @@ public class ConductorStatusService {
         return new DocumentNamesResponse(collectionId, conductorStatusRepository.listDocumentNames(collectionId));
     }
 
-    private int getStopCount(Object stopsValue) {
-        if (stopsValue instanceof List) {
-            return ((List<?>) stopsValue).size();
-        }
-        if (stopsValue instanceof String stringValue) {
-            return countStopsInString(stringValue);
-        }
-        return 0;
-    }
-
     private boolean isStringStops(Object stopsValue) {
-        if (stopsValue instanceof List) {
-            return ((List<?>) stopsValue).stream().allMatch(item -> item instanceof String);
-        }
-        return stopsValue instanceof String;
-    }
-
-    private int countStopsInString(String stopsValue) {
-        String trimmed = stopsValue.trim();
-        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
-        }
-        if (trimmed.isEmpty()) {
-            return 0;
-        }
-        return (int) Arrays.stream(trimmed.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .count();
+        return switch (stopsValue) {
+            case List<?> list -> list.stream().allMatch(item -> item instanceof String);
+            case String s -> s != null;
+            default -> false;
+        };
     }
 
     private java.util.List<Object> convertStopsToCountList(Object stopsValue) {
-        java.util.List<Object> stopCounts = new java.util.ArrayList<>();
-        if (stopsValue instanceof java.util.List<?>) {
-            stopCounts.addAll((java.util.List<?>) stopsValue);
-        } else if (stopsValue instanceof String) {
-            String stringValue = (String) stopsValue;
-            java.util.List<String> values = Arrays.stream(stringValue.replaceAll("[\\[\\] ]", "").split(","))
-                    .toList();
-            stopCounts.addAll(values);
-        } else {
-            throw new IllegalArgumentException("Unknown stop counts format.");
-        }
-        return stopCounts;
+        return switch (stopsValue) {
+            case java.util.List<?> list -> new java.util.ArrayList<>(list);
+            case String stringValue -> {
+                java.util.List<Object> stopCounts = new java.util.ArrayList<>();
+                java.util.List<String> values = Arrays.stream(stringValue.replaceAll("[\\[\\] ]", "").split(","))
+                        .toList();
+                stopCounts.addAll(values);
+                yield stopCounts;
+            }
+            default -> throw new IllegalArgumentException("Unknown stop counts format.");
+        };
     }
 
     public static class BusNotFoundException extends RuntimeException {

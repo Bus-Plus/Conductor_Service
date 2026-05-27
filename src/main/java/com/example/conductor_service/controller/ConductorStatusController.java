@@ -120,7 +120,7 @@ public class ConductorStatusController {
             BusRequest request = new BusRequest(routeId, busNumber);
             ResetTripResponse response = conductorStatusService.resetTrip(request);
             return ResponseEntity.ok(response);
-        } catch (BusNotFoundException ex) {
+        } catch (RouteNotFoundException ex) {
             return ResponseEntity.status(404).body(null);
         } catch (InterruptedException | ExecutionException ex) {
             Thread.currentThread().interrupt();
